@@ -27,6 +27,9 @@ const Analytics = lazy(() => import("./pages/Analytics"));
 const AdminConsole = lazy(() => import("./pages/AdminConsole"));
 import useAuthStore from "./stores/authStore";
 import useAlertStore from "./stores/alertStore";
+import useAsteroidStore from "./stores/asteroidStore";
+import useUplinkStore from "./stores/uplinkStore";
+import { UplinkBanner } from "./components/shared/UplinkStatus";
 import socketService from "./services/socket";
 
 function App() {
@@ -53,27 +56,42 @@ function App() {
     };
 
     initApp();
+    useUplinkStore.getState().start();
+
+    // A finished NASA sync means fresh data — refresh what the user is viewing
+    const refreshData = () => {
+      const store = useAsteroidStore.getState();
+      store.fetchTodayAsteroids();
+      store.fetchAsteroids();
+      store.fetchStats();
+    };
 
     // Connect to socket
     socketService.connect();
 
     // Listen for real-time events
     socketService.on("NEW_HAZARDOUS_ASTEROID", (data) => {
-      console.log("🚨 New hazardous asteroid:", data);
+      const a = data.asteroid || {};
       addToast({
         type: "warning",
-        title: "Hazardous Asteroid Detected",
-        message: `${data.name || "New asteroid"} is approaching Earth`,
+        title: "High-Risk Asteroid Detected",
+        message: `${a.name || "New asteroid"} — risk ${a.riskScore ?? "?"}/100, passing at ${a.missDistanceLunar?.toFixed(1) ?? "?"} LD`,
       });
     });
 
     socketService.on("DAILY_UPDATE", (data) => {
-      console.log("📡 Daily update:", data);
+      useUplinkStore.getState().markSynced(data.stats?.processed);
+      refreshData();
       addToast({
         type: "info",
-        title: "Data Updated",
-        message: `${data.count || 0} asteroids tracked today`,
+        title: "NASA Data Synced",
+        message: `${data.stats?.processed ?? 0} asteroids updated from NASA NeoWs`,
       });
+    });
+
+    socketService.on("WEEKLY_UPDATE", (data) => {
+      useUplinkStore.getState().markSynced(data.stats?.processed);
+      refreshData();
     });
 
     return () => {
@@ -117,6 +135,7 @@ function App() {
         <div className="min-h-screen bg-space-900 stars-bg flex flex-col">
           <Navbar />
           <BroadcastBanner />
+          <UplinkBanner />
 
           <main className="flex-1">
             <AnimatePresence mode="wait">

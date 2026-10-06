@@ -126,5 +126,19 @@
     "role": "Role",
     "lastLogin": "Last login",
     "never": "Never"
+  },
+  "uplink": {
+    "live": "Live",
+    "degraded": "Degraded",
+    "waking": "Waking up",
+    "connecting": "Connecting",
+    "offline": "Offline",
+    "syncing": "syncing NASA data…",
+    "justNow": "synced just now",
+    "minutesAgo": "synced {{count}}m ago",
+    "hoursAgo": "synced {{count}}h ago",
+    "lastSync": "Last NASA NeoWs sync: {{ago}}",
+    "wakingMessage": "Establishing uplink to the tracking server — the first connection can take up to a minute.",
+    "offlineMessage": "Tracking server unreachable. Retrying automatically…"
   }
 }

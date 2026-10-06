@@ -46,6 +46,8 @@ const nasaFetch = async (url) => {
         if (!response.ok) {
             apiMetrics.failedCalls++;
             apiMetrics.lastError = `${response.status} ${response.statusText}`;
+        } else {
+            apiMetrics.lastError = null;
         }
         return response;
     } catch (error) {

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Github, Twitter, Globe, Heart } from 'lucide-react';
+import { Github, Globe, Heart } from 'lucide-react';
 
 const Footer = () => {
     return (
@@ -21,7 +21,8 @@ const Footer = () => {
                             </p>
                             <div className="flex gap-4">
                                 <a
-                                    href="https://github.com"
+                                    href="https://github.com/SagarSwain05/Astral"
+                                    aria-label="Source code on GitHub"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="p-2 rounded-lg hover:bg-white/5 text-white/50 hover:text-white transition-colors"
@@ -29,15 +30,8 @@ const Footer = () => {
                                     <Github className="w-5 h-5" />
                                 </a>
                                 <a
-                                    href="https://twitter.com"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-2 rounded-lg hover:bg-white/5 text-white/50 hover:text-white transition-colors"
-                                >
-                                    <Twitter className="w-5 h-5" />
-                                </a>
-                                <a
-                                    href="https://nasa.gov"
+                                    href="https://cneos.jpl.nasa.gov"
+                                    aria-label="NASA Center for Near Earth Object Studies"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="p-2 rounded-lg hover:bg-white/5 text-white/50 hover:text-white transition-colors"
@@ -120,7 +114,7 @@ const Footer = () => {
                     {/* Bottom bar */}
                     <div className="border-t border-white/10 mt-8 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
                         <p className="text-white/40 text-sm">
-                            © 2024 Astral NEO Monitoring. Data provided by NASA NeoWs API.
+                            © {new Date().getFullYear()} ASTRAL · Orbital data: NASA NeoWs / JPL CNEOS. Risk scores are educational estimates, not official hazard assessments.
                         </p>
                         <p className="text-white/40 text-sm flex items-center gap-1">
                             Made with <Heart className="w-4 h-4 text-risk-high" /> for space enthusiasts

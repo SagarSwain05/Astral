@@ -12,7 +12,13 @@ import authRoutes from "./routes/authRoutes.js";
 import alertRoutes from "./routes/alertRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
-import { initScheduler, runWeeklyFetch } from "./services/scheduler.js";
+import {
+  initScheduler,
+  runStartupSync,
+  getSyncState,
+} from "./services/scheduler.js";
+import { getNasaMetrics } from "./services/nasaService.js";
+import mongoose from "mongoose";
 import { initCache } from "./services/cacheService.js";
 import ChatMessage from "./models/ChatMessage.js";
 import jwt from "jsonwebtoken";
@@ -124,6 +130,27 @@ app.get("/health", (req, res) => {
     status: "ok",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+  });
+});
+
+// Public uplink status — drives the "live" indicator in the UI
+app.get("/api/status", async (req, res) => {
+  const sync = getSyncState();
+  const nasa = getNasaMetrics();
+  res.json({
+    success: true,
+    data: {
+      status: mongoose.connection.readyState === 1 ? "operational" : "degraded",
+      lastSyncAt: sync.lastSyncAt,
+      lastSyncCount: sync.lastSyncStats?.processed ?? null,
+      syncing: sync.syncing,
+      nasa: {
+        reachable: nasa.totalCalls === 0 || nasa.lastError === null,
+        lastLatencyMs: nasa.lastLatencyMs,
+      },
+      connectedClients: io.engine.clientsCount,
+      serverTime: new Date().toISOString(),
+    },
   });
 });
 
@@ -403,7 +430,7 @@ const startServer = async () => {
       // Fetch the rolling 7-day window on startup (in background) so the feed
       // is populated even after a cold start on free hosting tiers
       console.log("📡 Running initial asteroid fetch...");
-      runWeeklyFetch();
+      runStartupSync();
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);

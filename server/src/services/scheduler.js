@@ -12,6 +12,15 @@ import { Asteroid } from '../models/index.js';
 
 let io = null;
 
+// Last successful NASA sync, exposed via GET /api/status
+const syncState = {
+    lastSyncAt: null,
+    lastSyncStats: null,
+    syncing: false,
+};
+
+export const getSyncState = () => ({ ...syncState });
+
 /**
  * Process and store asteroids from NASA data
  * @param {Array} neoData - Array of asteroid objects from NASA
@@ -59,6 +68,11 @@ export const processAndStoreAsteroids = async (neoData) => {
 
     // Derived API responses (stats, analytics, featured) are now stale
     await cacheDelPattern('api:');
+
+    if (stats.processed > 0) {
+        syncState.lastSyncAt = new Date();
+        syncState.lastSyncStats = stats;
+    }
 
     return stats;
 };
@@ -147,6 +161,27 @@ export const runRangeFetch = async (startDate, endDate) => {
         return { total: 0, processed: 0, hazardous: 0, highRisk: 0, errors: 0 };
     }
     return processAndStoreAsteroids(neos);
+};
+
+/**
+ * Boot-time sync: the rolling week ahead plus the previous 7 days, so the
+ * feed, analytics and history views are populated right after a cold start.
+ */
+export const runStartupSync = async () => {
+    syncState.syncing = true;
+    try {
+        await runWeeklyFetch();
+        const end = new Date();
+        end.setUTCDate(end.getUTCDate() - 1);
+        const start = new Date(end);
+        start.setUTCDate(start.getUTCDate() - 6);
+        console.log('📜 Backfilling the previous 7 days...');
+        await runRangeFetch(start, end);
+    } catch (error) {
+        console.error('❌ Startup sync failed:', error);
+    } finally {
+        syncState.syncing = false;
+    }
 };
 
 /**

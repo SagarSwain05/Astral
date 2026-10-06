@@ -126,5 +126,19 @@
     "role": "Rol",
     "lastLogin": "Último acceso",
     "never": "Nunca"
+  },
+  "uplink": {
+    "live": "En vivo",
+    "degraded": "Degradado",
+    "waking": "Despertando",
+    "connecting": "Conectando",
+    "offline": "Sin conexión",
+    "syncing": "sincronizando datos de la NASA…",
+    "justNow": "sincronizado ahora",
+    "minutesAgo": "sincronizado hace {{count}} min",
+    "hoursAgo": "sincronizado hace {{count}} h",
+    "lastSync": "Última sincronización NASA NeoWs: {{ago}}",
+    "wakingMessage": "Estableciendo enlace con el servidor de seguimiento — la primera conexión puede tardar hasta un minuto.",
+    "offlineMessage": "Servidor de seguimiento inaccesible. Reintentando automáticamente…"
   }
 }

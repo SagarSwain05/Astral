@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "../shared/LanguageSwitcher";
+import { UplinkPill } from "../shared/UplinkStatus";
 import useAuthStore from "../../stores/authStore";
 import useAlertStore from "../../stores/alertStore";
 import SearchModal from "../Common/SearchModal";
@@ -78,6 +79,7 @@ const Navbar = () => {
 
             {/* Right side actions */}
             <div className="flex items-center gap-1 sm:gap-3">
+              <UplinkPill />
               <LanguageSwitcher />
 
               {/* Search */}
