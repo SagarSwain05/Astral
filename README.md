@@ -7,6 +7,8 @@ alerts and visualizations that non-specialists can read: a 0–100 Risk Engine, 
 orrery, a kinetic impact simulator, live discussion rooms, and an admin console for
 dispatching national "Red Alerts".
 
+**Live:** web — https://astral-mu-ashy.vercel.app · API — https://astral-api-kwt0.onrender.com
+
 | | |
 |---|---|
 | **Frontend** | React 19 (Vite), Tailwind CSS, Lucide, Three.js / React Three Fiber, Recharts, i18next |
