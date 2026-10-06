@@ -54,7 +54,9 @@ const checkOrigin = (origin, callback) => {
   }
 
   console.warn("CORS blocked origin:", origin);
-  callback(new Error(`Origin ${origin} not allowed by CORS`));
+  const err = new Error(`Origin ${origin} not allowed by CORS`);
+  err.statusCode = 403;
+  callback(err);
 };
 
 // Initialize Socket.IO
