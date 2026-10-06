@@ -142,7 +142,7 @@ npm install
 npm run dev                     # http://localhost:3000
 ```
 
-**Becoming admin:** put your email in `ADMIN_EMAILS`, register, then restart the server. The
+**Becoming admin:** put your email in `ADMIN_EMAILS` and register — the account gets the admin role immediately (existing accounts are promoted on the next server start). The
 **Admin** tab appears in the navbar.
 
 ---

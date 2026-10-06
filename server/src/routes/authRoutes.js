@@ -36,11 +36,18 @@ router.post("/register", async (req, res, next) => {
       });
     }
 
+    // Accounts listed in ADMIN_EMAILS get the admin role immediately
+    const adminEmails = (process.env.ADMIN_EMAILS || "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+
     // Create user (password will be hashed by pre-save middleware)
     const user = await User.create({
       email: email.toLowerCase(),
       passwordHash: password,
       displayName,
+      ...(adminEmails.includes(email.toLowerCase()) && { role: "admin" }),
     });
 
     // Generate token
