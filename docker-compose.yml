@@ -1,0 +1,101 @@
+# ═══════════════════════════════════════════════════════════
+#  ASTRAL — Local development stack
+#    docker compose up --build
+#    App:            http://localhost
+#    API:            http://localhost:5000
+#    Mongo Express:  http://localhost:8081  (admin / admin123)
+# ═══════════════════════════════════════════════════════════
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: astral-mongodb
+    restart: unless-stopped
+    command: ["mongod", "--auth", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: astral_admin
+      MONGO_INITDB_ROOT_PASSWORD: astral_secret_2024
+      MONGO_INITDB_DATABASE: astral_neo
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - astral-network
+
+  # Redis — caches NASA API responses and hot endpoints
+  redis:
+    image: redis:7-alpine
+    container_name: astral-redis
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+    networks:
+      - astral-network
+
+  # Mongo Express - Web UI for MongoDB (Dev only)
+  mongo-express:
+    image: mongo-express:latest
+    container_name: astral-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: astral_admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: astral_secret_2024
+      ME_CONFIG_MONGODB_URL: mongodb://astral_admin:astral_secret_2024@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    depends_on:
+      - mongodb
+    networks:
+      - astral-network
+
+  # Backend API
+  backend:
+    build: ./server
+    container_name: astral-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      MONGODB_URI: mongodb://astral_admin:astral_secret_2024@mongodb:27017/astral_neo?authSource=admin
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-astral_dev_jwt_secret}
+      NASA_API_KEY: ${NASA_API_KEY:-DEMO_KEY}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - astral-network
+
+  # Frontend (nginx serves the Vite build and proxies /api + /socket.io)
+  frontend:
+    build:
+      context: ./client
+      args:
+        VITE_API_URL: ""
+        VITE_SOCKET_URL: ""
+    container_name: astral-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - astral-network
+
+networks:
+  astral-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  mongodb_config:

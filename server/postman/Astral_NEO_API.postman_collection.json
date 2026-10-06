@@ -1,0 +1,1034 @@
+{
+  "info": {
+    "name": "Astral NEO Monitoring API",
+    "description": "Complete API collection for the Astral Near-Earth Object Monitoring platform.\n\n## Auth Flow\n1. Register a new user via **Auth > Register**\n2. Login via **Auth > Login** \u2014 the token is auto-saved to `{{authToken}}`\n3. All private endpoints will use the saved token automatically.\n\n## Admin Routes\nRequire a user with `role: \"admin\"` \u2014 set `ADMIN_EMAILS` on the server to promote accounts on boot.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "astral-neo"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "asteroidId",
+      "value": "3542519"
+    },
+    {
+      "key": "userId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Info",
+      "description": "Server health and welcome endpoints (no auth required).",
+      "item": [
+        {
+          "name": "Welcome / Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Returns API info and available endpoints."
+          }
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Returns server status, timestamp, and uptime."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints \u2014 register, login, profile, watchlist, account deletion.",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.data && json.data.token) {",
+                  "        pm.environment.set('authToken', json.data.token);",
+                  "        pm.environment.set('userId', json.data.user._id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"displayName\": \"{{testDisplayName}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a new user. Auto-saves token on success."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.data && json.data.token) {",
+                  "        pm.environment.set('authToken', json.data.token);",
+                  "        pm.environment.set('userId', json.data.user._id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login with email & password. Auto-saves token on success."
+          }
+        },
+        {
+          "name": "Get Current User (Me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Get the currently authenticated user's profile. Requires auth."
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Updated Name\",\n  \"alertSettings\": {\n    \"emailAlerts\": true,\n    \"pushAlerts\": true,\n    \"riskThreshold\": \"medium\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Update the authenticated user's display name, avatar, or alert settings."
+          }
+        },
+        {
+          "name": "Get Watchlist",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/watchlist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "watchlist"
+              ]
+            },
+            "description": "Get all asteroids on the user's watchlist with full details."
+          }
+        },
+        {
+          "name": "Add to Watchlist",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/watchlist/{{asteroidId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "watchlist",
+                "{{asteroidId}}"
+              ]
+            },
+            "description": "Add an asteroid to the user's watchlist by neo_reference_id."
+          }
+        },
+        {
+          "name": "Remove from Watchlist",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/watchlist/{{asteroidId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "watchlist",
+                "{{asteroidId}}"
+              ]
+            },
+            "description": "Remove an asteroid from the user's watchlist."
+          }
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/account",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "account"
+              ]
+            },
+            "description": "Permanently delete the user's account and all associated alerts. \u26a0\ufe0f Irreversible."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Asteroids",
+      "description": "Public asteroid data endpoints \u2014 list, stats, today's approaches, single lookup, hazardous.",
+      "item": [
+        {
+          "name": "List Asteroids",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asteroids?page=1&limit=20&sortBy=closeApproachDate&order=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "asteroids"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page (default: 20)"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "closeApproachDate",
+                  "description": "Sort field (default: closeApproachDate)"
+                },
+                {
+                  "key": "order",
+                  "value": "asc",
+                  "description": "Sort order: asc | desc"
+                },
+                {
+                  "key": "riskCategory",
+                  "value": "high",
+                  "description": "Filter by risk category",
+                  "disabled": true
+                },
+                {
+                  "key": "hazardousOnly",
+                  "value": "true",
+                  "description": "Show only potentially hazardous asteroids",
+                  "disabled": true
+                },
+                {
+                  "key": "minRiskScore",
+                  "value": "50",
+                  "description": "Minimum risk score filter",
+                  "disabled": true
+                },
+                {
+                  "key": "maxDistance",
+                  "value": "10",
+                  "description": "Max miss distance in lunar distances",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get paginated list of cached asteroids with optional filters."
+          }
+        },
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asteroids/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "asteroids",
+                "stats"
+              ]
+            },
+            "description": "Get dashboard statistics: total tracked, hazardous count, today's approaches, risk distribution, etc."
+          }
+        },
+        {
+          "name": "Get Today's Approaches",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asteroids/today",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "asteroids",
+                "today"
+              ]
+            },
+            "description": "Get all asteroids with close approaches today, sorted by distance."
+          }
+        },
+        {
+          "name": "Get Asteroid by ID",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asteroids/{{asteroidId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "asteroids",
+                "{{asteroidId}}"
+              ]
+            },
+            "description": "Get a single asteroid by its neo_reference_id. Also returns size comparison data."
+          }
+        },
+        {
+          "name": "Get All Hazardous Asteroids",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asteroids/hazardous/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "asteroids",
+                "hazardous",
+                "all"
+              ]
+            },
+            "description": "Get all potentially hazardous asteroids, sorted by risk score descending."
+          }
+        },
+        {
+          "name": "Filtered List (size / speed / date range)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asteroids?startDate=2026-10-07&endDate=2026-10-13&minDiameter=100&minVelocity=10&maxDistance=50&hazardousOnly=false&sortBy=riskScore&order=desc&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "asteroids"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-10-07"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-10-13"
+                },
+                {
+                  "key": "minDiameter",
+                  "value": "100"
+                },
+                {
+                  "key": "minVelocity",
+                  "value": "10"
+                },
+                {
+                  "key": "maxDistance",
+                  "value": "50"
+                },
+                {
+                  "key": "hazardousOnly",
+                  "value": "false"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "riskScore"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Sort & Filter Bar: date window, size, velocity, distance, hazardous, search."
+          }
+        },
+        {
+          "name": "Asteroid of the Day",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asteroids/featured",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "asteroids",
+                "featured"
+              ]
+            },
+            "description": "Most notable object approaching today, with reasons."
+          }
+        },
+        {
+          "name": "Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asteroids/analytics?startDate=2026-10-07&endDate=2026-10-13",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "asteroids",
+                "analytics"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-10-07"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-10-13"
+                }
+              ]
+            },
+            "description": "Risk distribution, daily approaches, size buckets and speed-vs-distance scatter."
+          }
+        },
+        {
+          "name": "Sync Date Range from NASA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/asteroids/sync-range",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "asteroids",
+                "sync-range"
+              ]
+            },
+            "description": "Pull up to 7 days from NASA NeoWs into the cache (Date Range Picker).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"2026-09-20\",\n  \"endDate\": \"2026-09-26\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Approach History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/asteroids/{{asteroidId}}/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "asteroids",
+                "{{asteroidId}}",
+                "history"
+              ]
+            },
+            "description": "Every recorded past and predicted Earth approach for one asteroid."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Alerts",
+      "description": "User alert endpoints (all require authentication).",
+      "item": [
+        {
+          "name": "Get Alerts (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts?page=1&limit=20&unreadOnly=false",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page (default: 20)"
+                },
+                {
+                  "key": "unreadOnly",
+                  "value": "false",
+                  "description": "Set to 'true' to show only unread alerts",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Get the authenticated user's alerts with pagination."
+          }
+        },
+        {
+          "name": "Get Unread Alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/unread",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts",
+                "unread"
+              ]
+            },
+            "description": "Get all unread alerts for the authenticated user."
+          }
+        },
+        {
+          "name": "Mark Alert as Read",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/{{alertId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts",
+                "{{alertId}}",
+                "read"
+              ]
+            },
+            "description": "Mark a single alert as read by alert _id."
+          }
+        },
+        {
+          "name": "Mark All Alerts as Read",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts",
+                "read-all"
+              ]
+            },
+            "description": "Mark all of the authenticated user's alerts as read."
+          }
+        },
+        {
+          "name": "Delete Alert",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/{{alertId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts",
+                "{{alertId}}"
+              ]
+            },
+            "description": "Delete a specific alert by _id."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "description": "Chat message endpoints (REST \u2014 real-time uses Socket.IO).",
+      "item": [
+        {
+          "name": "Get Chat Messages",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/messages?room=global&limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "room",
+                  "value": "global",
+                  "description": "Room name: 'global' or 'asteroid:<id>'"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Max messages to return (max 100)"
+                },
+                {
+                  "key": "before",
+                  "value": "2026-02-08T00:00:00.000Z",
+                  "description": "ISO date \u2014 get messages before this timestamp (cursor pagination)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get recent chat messages for a room (paginated, newest first, returned in chronological order)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Admin-only endpoints. Require a user with `role: \"admin\"` + valid auth token.",
+      "item": [
+        {
+          "name": "Trigger Manual Fetch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"today\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/fetch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "fetch"
+              ]
+            },
+            "description": "Manually trigger asteroid data fetch from NASA. Body `type` can be 'today' or 'week'."
+          }
+        },
+        {
+          "name": "Test NASA API Connection",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/test-nasa",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "test-nasa"
+              ]
+            },
+            "description": "Test the NASA NeoWs API connection. Returns asteroid count and response time."
+          }
+        },
+        {
+          "name": "Test Risk Calculation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/test-risk/{{asteroidId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "test-risk",
+                "{{asteroidId}}"
+              ]
+            },
+            "description": "Fetch an asteroid from NASA by ID and run the risk engine on it. Returns risk score, category, and level info."
+          }
+        },
+        {
+          "name": "Get System Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "stats"
+              ]
+            },
+            "description": "Get system-wide stats: asteroid counts, user counts, alert counts, server uptime & memory."
+          }
+        },
+        {
+          "name": "System Health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "health"
+              ]
+            },
+            "description": "API limits, NASA latency, DB/cache status, active users."
+          }
+        },
+        {
+          "name": "Dispatch Red Alert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/broadcast",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "broadcast"
+              ]
+            },
+            "description": "Broadcast a (simulated) national alert to every connected client.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"level\": \"red\",\n  \"title\": \"Planetary Defense Drill\",\n  \"message\": \"Simulated red alert \\u2014 this is a drill.\",\n  \"isSimulation\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Broadcast History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/broadcasts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "broadcasts"
+              ]
+            },
+            "description": "Last 50 dispatched alerts."
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            },
+            "description": "Users with roles for role management."
+          }
+        },
+        {
+          "name": "Change User Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{userId}}/role",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{userId}}",
+                "role"
+              ]
+            },
+            "description": "Set role to user | researcher | admin.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"researcher\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test: response time < 5s",
+          "pm.test('Response time is acceptable', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "// Global test: valid JSON",
+          "pm.test('Response is valid JSON', function () {",
+          "    pm.response.json();",
+          "});"
+        ]
+      }
+    }
+  ]
+}

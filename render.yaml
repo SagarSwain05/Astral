@@ -1,0 +1,42 @@
+# Render Blueprint — ASTRAL backend API + Redis cache
+# Dashboard → New → Blueprint → pick this repo. Fill the `sync: false` values when prompted.
+services:
+  - type: web
+    name: astral-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: server
+    buildCommand: npm ci --omit=dev
+    startCommand: node src/app.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: MONGODB_URI
+        sync: false # MongoDB Atlas connection string
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: NASA_API_KEY
+        sync: false # free key from https://api.nasa.gov
+      - key: CORS_ORIGIN
+        sync: false # e.g. https://astral.vercel.app (comma-separated for several)
+      - key: ADMIN_EMAILS
+        sync: false # accounts promoted to admin on boot
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: astral-cache
+          property: connectionString
+
+  - type: keyvalue
+    name: astral-cache
+    plan: free
+    region: singapore
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: [] # private network only
