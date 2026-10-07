@@ -117,108 +117,61 @@ $$
 
 ## Orbital Mechanics & Visualization
 
-**Source:** `client/src/utils/orbitalMechanics.js`
+The 3D view (dashboard globe and **3D View** page) is a real-time, geocentric
+model built from real ephemerides. Nothing is decorative.
 
-The 3D visualization renders asteroid orbits around Earth. Since NASA's close-approach data doesn't always include full Keplerian orbital elements, the app **estimates** plausible elliptical orbits from the available data.
+### Asteroid trajectories (JPL orbital elements)
 
-### Orbit Estimation
+1. After every NASA sync the server calls the NeoWs **lookup** endpoint for each
+   new asteroid and stores its JPL osculating elements
+   (`a, e, i, Ω, ω, M₀, n, epoch`) plus orbit class, MOID, period and the
+   observation arc (`server/src/services/orbitService.js`, `enrichOrbits()`).
+2. The client propagates the asteroid **and** Earth as two-body Kepler orbits
+   (Earth: Standish/JPL approximate elements) and subtracts them:
+   `r_geo(t) = r_ast,helio(t) − r_earth,helio(t)` (`client/src/utils/ephemeris.js`).
+3. **Validation.** At NASA's close-approach time the model reproduces NASA's
+   published miss distance and relative speed. For the October 2026 sample,
+   70 of 72 objects agree within ±5 % on distance, and speeds agree to 0.1 km/s.
+   The ratio is stored as `orbit.fidelity`.
+4. **Anchoring.** Positions are scaled by `1 / fidelity`, so the drawn closest
+   approach lands exactly on NASA's value. If fidelity is worse than ±15 %
+   (e.g. a 16-year-old orbit epoch), the path falls back to a straight-line
+   flyby through NASA's miss distance and speed, oriented by the JPL-derived
+   approach direction. The info panel states which model is used.
+5. Approaching / receding status follows NASA's (n-body) close-approach time,
+   with "at closest approach" within ±3 h.
 
-When full orbital elements are unavailable, `estimateOrbit()` derives approximate parameters:
+### Earth, Sun and Moon
 
-#### Semi-major Axis
+| Body | Method | Accuracy |
+|---|---|---|
+| Earth rotation | Greenwich Mean Sidereal Time; axis tilted 23.44° to the ecliptic | sub-degree |
+| Sun direction | Negated Earth heliocentric position | ≈ 1′ |
+| Moon | Low-precision lunar theory (Astronomical Almanac) | ≈ 0.3°, distance ±0.1 % |
 
-$$
-a = \frac{r_p}{1 - e}
-$$
+Validated: at the 2026 solstices the subsolar point is at ±23.44° latitude,
+and on 6 Oct 2026 06:00 UTC it is at 5.0° S, 86.7° E (expected ≈ 5° S, 87° E).
 
-Where:
+### Scene scale
 
-- $r_p$ = periapsis distance (scene units) = `2.5 + missDistanceKm × VIS_SCALE`
-- $e$ = eccentricity (derived from velocity)
+Directions are true; distances are compressed logarithmically so a geostationary
+satellite and an asteroid at 200 LD fit in one view:
 
-The constant `2.5` ensures the orbit clears the Earth model (radius = 2 in scene units).
+```
+R_scene = 2 · (1 + 3.1 · log10(r_km / 6371))      (Earth radius = 2 units)
+```
 
-#### Eccentricity (from velocity)
+Reference rings mark GEO (42,164 km), 1 LD (Moon), 10, 50 and 200 LD. Frame:
+ecliptic J2000 with ecliptic north up.
 
-Faster asteroids tend to be on more eccentric (elongated) orbits:
+### Interaction
 
-$$
-e = \min\left(0.85,\; 0.15 + \frac{v}{60}\right)
-$$
-
-This maps typical NEO velocities (5–30 km/s) to eccentricities between 0.23 and 0.65, with a cap at 0.85.
-
-#### Inclination
-
-Hazardous asteroids are statistically more likely to have low-inclination orbits (crossing Earth's orbital plane more directly):
-
-$$
-i = i_{\text{base}} + \text{rand} \times 25°
-$$
-
-Where $i_{\text{base}}$ = 5° for hazardous, 15° for non-hazardous.
-
-#### Orientation (Deterministic Randomness)
-
-The longitude of ascending node ($\Omega$) and argument of periapsis ($\omega$) are generated using a **seeded random function** keyed to the asteroid's NEO reference ID. This ensures:
-
-- The same asteroid always renders the same orbit.
-- Different asteroids have distinct orientations.
-
-### Kepler's Equation Solver
-
-To animate asteroids moving along their orbits, we need position at any time $t$. This requires solving **Kepler's equation**:
-
-$$
-M = E - e \sin E
-$$
-
-Where:
-
-- $M$ = mean anomaly (angle that increases uniformly with time)
-- $E$ = eccentric anomaly (the actual position parameter we need)
-- $e$ = eccentricity
-
-This equation is **transcendental** — it has no closed-form solution. The app uses the **Newton-Raphson iterative method**:
-
-$$
-E_{n+1} = E_n - \frac{E_n - e \sin E_n - M}{1 - e \cos E_n}
-$$
-
-Starting with $E_0 = M$ and iterating 10 times, this converges to machine precision for all eccentricities $e < 1$.
-
-Once $E$ is found, the **true anomaly** $\theta$ is:
-
-$$
-\theta = 2 \arctan\left(\sqrt{\frac{1+e}{1-e}} \cdot \tan\frac{E}{2}\right)
-$$
-
-And the position in the orbital plane:
-
-$$
-x = a \cos\theta - c, \quad y = b \sin\theta, \quad z = 0
-$$
-
-Where $b = a\sqrt{1 - e^2}$ (semi-minor axis) and $c = ae$ (focus offset).
-
-The position is then rotated by $\Omega$, $i$, and $\omega$ to orient the orbit in 3D space.
-
-### Visualization Scale
-
-Real astronomical distances would make orbits invisible at Earth's scale. The app uses a **visual compression factor**:
-
-$$
-\text{VIS\_SCALE} = 0.00004
-$$
-
-This maps physical km distances to scene units:
-
-| Physical Distance       | Scene Units | Visual Result     |
-| ----------------------- | ----------- | ----------------- |
-| Earth radius (6,371 km) | 2.0         | Earth model size  |
-| 100,000 km              | 4.0         | Close approach    |
-| 1,000,000 km            | 40.0        | Moderate distance |
-| 10,000,000 km           | 400.0       | Distant pass      |
+- Time slider ±7 days, with playback from 30 min/s up to 1 day/s. At 0 the
+  view is live, and bodies move in real time.
+- Click an asteroid (or pick it from the list) to get live distance, phase,
+  closest-approach countdown, miss distance, size comparison, risk, JPL orbit
+  (class, a/e/i, MOID, period, observation arc) and "Jump to closest approach".
+- Deep link: `/visualization?focus=<neo_reference_id>`.
 
 ---
 
@@ -408,8 +361,10 @@ Alerts are delivered via:
 | ----------------- | ---------------- | ---------------------------------------------- |
 | `AU_KM`           | 149,597,870.7 km | 1 Astronomical Unit                            |
 | `EARTH_RADIUS_KM` | 6,371 km         | Earth mean radius                              |
-| `SCENE_SCALE`     | 2                | Earth model radius in scene units              |
-| `VIS_SCALE`       | 0.00004          | Visual compression factor for km → scene units |
+| `LUNAR_DISTANCE_KM` | 384,400 km     | 1 LD (mean Earth–Moon distance)                |
+| `EARTH_SCENE_RADIUS` | 2             | Earth model radius in scene units              |
+| `LOG_K`           | 3.1              | Logarithmic distance compression factor        |
+| `OBLIQUITY`       | 23.4393°         | Earth axial tilt (equatorial ↔ ecliptic)       |
 
 ### Impact Simulator Defaults
 

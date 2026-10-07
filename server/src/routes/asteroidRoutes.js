@@ -157,6 +157,32 @@ router.post('/sync-range', async (req, res, next) => {
     }
 });
 
+// @route   GET /api/asteroids/flybys
+// @desc    Lightweight list for the 3D orbital view: every object whose close
+//          approach falls within ±days of now, with JPL orbital elements
+// @access  Public
+router.get('/flybys', async (req, res, next) => {
+    try {
+        const days = Math.min(30, Math.max(1, parseInt(req.query.days) || 7));
+        const data = await cached(`api:flybys:${days}`, 120, async () => {
+            const now = Date.now();
+            return Asteroid.find({
+                closeApproachDate: {
+                    $gte: new Date(now - days * 86400000),
+                    $lte: new Date(now + days * 86400000),
+                },
+            })
+                .select('neo_reference_id name isPotentiallyHazardous riskScore riskCategory estimatedDiameterMin estimatedDiameterMax closeApproachDate missDistanceKm missDistanceLunar relativeVelocityKmS absolute_magnitude_h orbit')
+                .sort({ closeApproachDate: 1 })
+                .limit(400)
+                .lean();
+        });
+        res.json({ success: true, count: data.length, data });
+    } catch (error) {
+        next(error);
+    }
+});
+
 // @route   GET /api/asteroids/stats
 // @desc    Get dashboard statistics
 // @access  Public

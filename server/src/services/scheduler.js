@@ -6,6 +6,8 @@
 import cron from 'node-cron';
 import { fetchTodayNeos, fetchWeekNeos, fetchRangeNeos } from './nasaService.js';
 import { cacheDelPattern } from './cacheService.js';
+import { fetchAsteroidById } from './nasaService.js';
+import { parseOrbitalData, computeApproachGeometry } from './orbitService.js';
 import { calculateRiskScore } from './riskEngine.js';
 import { checkAndDispatchAlerts, broadcastNewHazardousAsteroid } from './alertDispatcher.js';
 import { Asteroid } from '../models/index.js';
@@ -108,6 +110,7 @@ export const runDailyFetch = async () => {
 
         // Check for alerts
         await checkAndDispatchAlerts(io, 1);
+        enrichOrbits();
 
         console.log('✅ Daily fetch complete!\n');
     } catch (error) {
@@ -144,6 +147,7 @@ export const runWeeklyFetch = async () => {
 
         // Check for alerts with 7-day lookahead
         await checkAndDispatchAlerts(io, 7);
+        enrichOrbits();
 
         console.log('✅ Weekly fetch complete!\n');
     } catch (error) {
@@ -160,7 +164,66 @@ export const runRangeFetch = async (startDate, endDate) => {
     if (neos.length === 0) {
         return { total: 0, processed: 0, hazardous: 0, highRisk: 0, errors: 0 };
     }
-    return processAndStoreAsteroids(neos);
+    const stats = await processAndStoreAsteroids(neos);
+    enrichOrbits();
+    return stats;
+};
+
+/**
+ * Attach JPL orbital elements to asteroids that don't have them yet, so the
+ * 3D view can propagate their real trajectories. Runs in the background
+ * after every sync; NASA lookups are cached, and only new objects are fetched.
+ */
+let enriching = false;
+export const enrichOrbits = async ({ limit = 300, concurrency = 4 } = {}) => {
+    if (enriching) return { enriched: 0, skipped: true };
+    enriching = true;
+    let enriched = 0;
+    try {
+        const pending = await Asteroid.find({ $or: [{ orbit: null }, { orbit: { $exists: false } }] })
+            .select('neo_reference_id name closeApproachDate missDistanceKm')
+            .limit(limit)
+            .lean();
+        if (pending.length === 0) return { enriched: 0 };
+
+        console.log(`🪐 Enriching ${pending.length} asteroids with JPL orbital elements...`);
+
+        const worker = async () => {
+            while (pending.length) {
+                const a = pending.shift();
+                try {
+                    const neo = await fetchAsteroidById(a.neo_reference_id);
+                    const orbit = parseOrbitalData(neo?.orbital_data);
+                    if (!orbit) {
+                        // Mark as attempted so we don't refetch every sync
+                        await Asteroid.updateOne({ _id: a._id }, { orbit: { unavailable: true } });
+                        continue;
+                    }
+                    const g = computeApproachGeometry(orbit.elements, a.closeApproachDate);
+                    // How well the two-body model reproduces NASA's miss distance
+                    orbit.fidelity = a.missDistanceKm
+                        ? Number((g.modelMissKm / a.missDistanceKm).toFixed(3))
+                        : null;
+                    orbit.modelMissKm = g.modelMissKm;
+                    // Approach orientation (ecliptic unit vectors) for the
+                    // client's NASA-anchored fallback when fidelity is poor
+                    orbit.approach = { n: g.n, u: g.u };
+                    await Asteroid.updateOne({ _id: a._id }, { orbit });
+                    enriched++;
+                } catch (error) {
+                    console.error(`❌ Orbit enrichment failed for ${a.name}:`, error.message);
+                }
+            }
+        };
+        await Promise.all(Array.from({ length: concurrency }, worker));
+
+        await cacheDelPattern('api:');
+        console.log(`✅ Orbit enrichment complete: ${enriched} asteroids`);
+        if (io && enriched) io.emit('ORBITS_UPDATED', { enriched, timestamp: new Date() });
+        return { enriched };
+    } finally {
+        enriching = false;
+    }
 };
 
 /**
@@ -177,6 +240,7 @@ export const runStartupSync = async () => {
         start.setUTCDate(start.getUTCDate() - 6);
         console.log('📜 Backfilling the previous 7 days...');
         await runRangeFetch(start, end);
+        await enrichOrbits();
     } catch (error) {
         console.error('❌ Startup sync failed:', error);
     } finally {
@@ -238,6 +302,7 @@ export default {
     runDailyFetch,
     runWeeklyFetch,
     runRangeFetch,
+    enrichOrbits,
     processAndStoreAsteroids,
     triggerManualFetch,
 };

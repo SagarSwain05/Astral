@@ -25,6 +25,8 @@ const Earth3D = lazy(() => import("../components/Visualization/Earth3D"));
 const Dashboard = () => {
   const {
     todayAsteroids,
+    flybys,
+    fetchFlybys,
     asteroids,
     stats,
     fetchTodayAsteroids,
@@ -34,6 +36,7 @@ const Dashboard = () => {
   } = useAsteroidStore();
 
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [show3D, setShow3D] = useState(true);
@@ -42,6 +45,7 @@ const Dashboard = () => {
     fetchTodayAsteroids();
     fetchAsteroids();
     fetchStats();
+    fetchFlybys(7);
   }, []);
 
   const filteredAsteroids = asteroids.filter((asteroid) => {
@@ -167,10 +171,24 @@ const Dashboard = () => {
                   }
                 >
                   <Earth3D
-                    asteroids={todayAsteroids}
+                    asteroids={flybys}
+                    compact
+                    showLabels={false}
                     className="w-full h-full rounded-2xl overflow-hidden"
-                    useFreeCamera={true}
+                    onSelectAsteroid={(a) =>
+                      navigate(`/visualization?focus=${a.neo_reference_id}`)
+                    }
                   />
+                  <Link
+                    to="/visualization"
+                    className="absolute bottom-3 left-3 right-3 sm:right-auto glass px-3 py-2 text-xs text-white/70 hover:text-white flex items-center gap-2"
+                  >
+                    <span className="relative flex w-2 h-2">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+                      <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-400" />
+                    </span>
+                    {flybys.length} real flyby trajectories · click an asteroid or open the full 3D view
+                  </Link>
                 </Suspense>
               : <div className="w-full h-full glass rounded-2xl flex items-center justify-center">
                   <button

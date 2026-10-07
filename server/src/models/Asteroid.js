@@ -94,6 +94,14 @@ const asteroidSchema = new mongoose.Schema(
             default: 'Earth',
         },
 
+        // ========== ORBIT (JPL osculating elements via NeoWs lookup) ==========
+        // { elements, orbitClass, moidAu, periodDays, ..., fidelity }
+        // Filled asynchronously by the orbit enrichment job.
+        orbit: {
+            type: mongoose.Schema.Types.Mixed,
+            default: null,
+        },
+
         // ========== RAW NASA DATA ==========
         // Store the complete NASA response for reference
         raw_data: {

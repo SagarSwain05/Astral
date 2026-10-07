@@ -52,6 +52,7 @@ export const asteroidApi = {
   getHistory: (id) => api.get(`/api/asteroids/${id}/history`),
   getHazardous: () => api.get("/api/asteroids/hazardous/all"),
   getFeatured: () => api.get("/api/asteroids/featured"),
+  getFlybys: (days = 7) => api.get("/api/asteroids/flybys", { params: { days } }),
   getAnalytics: (params) => api.get("/api/asteroids/analytics", { params }),
   syncRange: (startDate, endDate) =>
     api.post("/api/asteroids/sync-range", { startDate, endDate }),

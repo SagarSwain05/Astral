@@ -4,6 +4,8 @@ import { asteroidApi, authApi } from '../services/api';
 export const useAsteroidStore = create((set, get) => ({
     asteroids: [],
     todayAsteroids: [],
+    flybys: [],
+    flybysLoaded: false,
     watchlist: [],
     selectedAsteroid: null,
     stats: null,
@@ -44,6 +46,19 @@ export const useAsteroidStore = create((set, get) => ({
                 error: error.response?.data?.message || 'Failed to fetch today\'s asteroids',
                 isLoading: false,
             });
+            return [];
+        }
+    },
+
+    // Fetch every flyby within ±days of now (3D orbital view)
+    fetchFlybys: async (days = 7) => {
+        try {
+            const response = await asteroidApi.getFlybys(days);
+            set({ flybys: response.data.data, flybysLoaded: true });
+            return response.data.data;
+        } catch (error) {
+            console.error('Failed to fetch flybys:', error);
+            set({ flybysLoaded: true });
             return [];
         }
     },

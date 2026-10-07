@@ -15,6 +15,7 @@ import {
   Globe,
   Share2,
   Bookmark,
+  Orbit,
 } from "lucide-react";
 import useAsteroidStore from "../stores/asteroidStore";
 import useAuthStore from "../stores/authStore";
@@ -233,9 +234,16 @@ const AsteroidDetail = () => {
                 <Share2 className="w-5 h-5" />
                 Share
               </button>
+              <Link
+                to={`/visualization?focus=${asteroid.neo_reference_id}`}
+                className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+              >
+                <Orbit className="w-5 h-5" />
+                View trajectory in 3D
+              </Link>
               <a
                 href={
-                  asteroid.nasaJplUrl ||
+                  asteroid.nasa_jpl_url ||
                   `https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=${asteroid.neo_reference_id}`
                 }
                 target="_blank"

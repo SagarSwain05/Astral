@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, AlertTriangle, ArrowRight, Orbit } from "lucide-react";
 import useAsteroidStore from "../../stores/asteroidStore";
 import useAuthStore from "../../stores/authStore";
@@ -9,6 +9,14 @@ const AsteroidCard = ({ asteroid, index = 0, compact = false }) => {
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } =
     useAsteroidStore();
   const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
+
+  // A button, not a nested link — the whole card is already a link
+  const openIn3D = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/visualization?focus=${asteroid.neo_reference_id}`);
+  };
 
   const isWatched = isInWatchlist(asteroid.neo_reference_id);
 
@@ -96,14 +104,15 @@ const AsteroidCard = ({ asteroid, index = 0, compact = false }) => {
             {asteroid.riskScore}
           </div>
 
-          <Link
-            to={`/visualization?focus=${asteroid.neo_reference_id}`}
-            onClick={(e) => e.stopPropagation()}
+          <button
+            type="button"
+            onClick={openIn3D}
             className="p-1.5 rounded-lg hover:bg-accent-primary/20 text-white/30 hover:text-accent-primary transition-colors"
-            title="View in 3D"
+            title="View trajectory in 3D"
+            aria-label="View trajectory in 3D"
           >
             <Orbit className="w-4 h-4" />
-          </Link>
+          </button>
 
           <ArrowRight className="w-4 h-4 text-white/30" />
         </motion.div>
@@ -162,14 +171,14 @@ const AsteroidCard = ({ asteroid, index = 0, compact = false }) => {
 
         {/* Actions */}
         <div className="flex gap-2 mb-4">
-          <Link
-            to={`/visualization?focus=${asteroid.neo_reference_id}`}
-            onClick={(e) => e.stopPropagation()}
+          <button
+            type="button"
+            onClick={openIn3D}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-primary/10 text-accent-primary text-xs font-medium hover:bg-accent-primary/20 transition-colors border border-accent-primary/20"
           >
             <Orbit className="w-3.5 h-3.5" />
             View in 3D
-          </Link>
+          </button>
         </div>
 
         {/* Stats grid */}

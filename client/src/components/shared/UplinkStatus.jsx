@@ -37,7 +37,7 @@ export const UplinkPill = () => {
 
   return (
     <div
-      className="hidden sm:flex lg:hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-space-800/60 border border-white/10 text-xs"
+      className="hidden sm:flex lg:hidden xl:flex items-center gap-2 whitespace-nowrap px-3 py-1.5 rounded-full bg-space-800/60 border border-white/10 text-xs"
       title={ago ? t("uplink.lastSync", { ago }) : undefined}
       role="status"
     >

@@ -11,12 +11,14 @@ import {
 } from "lucide-react";
 import useMediaQuery from "../../hooks/useMediaQuery";
 
+// Simulated time per real second
 const SPEED_OPTIONS = [
-  { label: "0.5×", value: 0.5 },
-  { label: "1×", value: 1 },
-  { label: "2×", value: 2 },
-  { label: "5×", value: 5 },
-  { label: "10×", value: 10 },
+  { label: "30 min/s", value: 0.5 },
+  { label: "1 h/s", value: 1 },
+  { label: "3 h/s", value: 3 },
+  { label: "6 h/s", value: 6 },
+  { label: "12 h/s", value: 12 },
+  { label: "1 day/s", value: 24 },
 ];
 
 // Day markers for the timeline
@@ -227,7 +229,7 @@ const TimeControls = ({
               className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors text-xs font-mono"
             >
               <FastForward className="w-3 h-3" />
-              {speed}×
+              {SPEED_OPTIONS.find((o) => o.value === speed)?.label ?? `${speed} h/s`}
             </button>
 
             <AnimatePresence>
